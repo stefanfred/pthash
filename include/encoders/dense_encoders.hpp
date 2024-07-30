@@ -8,16 +8,23 @@ namespace pthash {
 
 template <typename Encoder>
 struct diff {
+    typedef typename Encoder::in_type type;
+    static constexpr bool isSigned = std::is_signed<type>();
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t size, const uint64_t increment) {
         m_increment = increment;
-        std::vector<uint64_t> diff_values;
+        std::vector<type> diff_values;
         diff_values.reserve(size);
         int64_t expected = 0;
         for (uint64_t i = 0; i != size; ++i, ++begin) {
             int64_t to_encode = *begin - expected;
-            uint64_t abs_to_encode = abs(to_encode);
-            diff_values.push_back((abs_to_encode << 1) | uint64_t(to_encode > 0));
+            if constexpr (isSigned) {
+                diff_values.push_back(type(to_encode));
+            } else {
+                uint64_t abs_to_encode = abs(to_encode);
+                diff_values.push_back((abs_to_encode << 1) | uint64_t(to_encode > 0));
+            }
             expected += increment;
         }
         m_encoder.encode(diff_values.begin(), size);
@@ -32,10 +39,14 @@ struct diff {
     }
 
     inline uint64_t access(uint64_t i) const {
-        const uint64_t value = m_encoder.access(i);
+        const type value = m_encoder.access(i);
         const uint64_t expected = i * m_increment;
-        int64_t diff = ((value & 1) * 2 - 1) * int64_t(value >> 1);
-        return expected + diff;
+        if constexpr (isSigned) {
+            return expected + value;
+        } else {
+            int64_t diff = ((value & 1) * 2 - 1) * int64_t(value >> 1);
+            return expected + diff;
+        }
     }
 
     template <typename Visitor>

@@ -62,9 +62,11 @@ struct opt_bucketer {
 
     void init(const uint64_t num_buckets, const double lambda, const uint64_t table_size,
               const double alpha) {
+        constexpr double maxExpectedSize = 200;
+        constexpr double localCollFactor = 0.2;
         m_num_buckets = num_buckets;
         m_alpha = alpha;
-        c = 0.2 * lambda / std::sqrt(table_size);
+        c = localCollFactor * lambda / std::sqrt(table_size);
         if (alpha > 0.9999) {
             m_alpha_factor = 1.0;
         } else {
@@ -108,6 +110,43 @@ private:
     double m_alpha;
     double m_alpha_factor;
 };
+
+
+
+
+struct opt_bucketer_poly {
+    opt_bucketer_poly() {}
+
+    void init(const uint64_t num_buckets, const double lambda, const uint64_t table_size,
+              const double alpha) {
+
+    }
+
+    inline uint64_t bucket(const uint64_t hash) const {
+        return 0;
+    }
+
+    uint64_t num_buckets() const {
+        return m_num_buckets;
+    }
+
+    size_t num_bits() const {
+        return 8 * sizeof(m_num_buckets);
+    }
+
+    template <typename Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_num_buckets);
+    }
+
+private:
+    uint64_t m_num_buckets;
+};
+
+struct opt_bucketer_poly_constexpr {
+
+};
+
 
 struct skew_bucketer {
     static constexpr float a = 0.6;  // p1=n*a keys are placed in

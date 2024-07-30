@@ -21,7 +21,7 @@ struct dense_partitioned_phf {
     }
 
     template <typename Builder>
-    double build(Builder& builder, build_configuration const&  config)  //
+    double build(Builder& builder, build_configuration const& config)  //
     {
         auto start = clock_type::now();
 
@@ -78,12 +78,17 @@ struct dense_partitioned_phf {
             const __uint128_t M = fastmod::computeM_u64(partition_size);
             const uint64_t hashed_pilot = default_hash64(pilot, m_seed);
             return fastmod::fastmod_u64(hash.second() ^ hashed_pilot, M, partition_size);
-        } else {
+        }
+        if constexpr (Search == pthash_search_type::add_displacement) {
             /* additive displacement */
             const uint64_t M = fastmod::computeM_u32(partition_size);
             const uint64_t s = fastmod::fastdiv_u32(pilot, M);
             return fastmod::fastmod_u32(((hash64(hash.second() + s).mix()) >> 33) + pilot, M,
                                         partition_size);
+        }
+        if constexpr (Search == pthash_search_type::mult_hash) {
+            /* multiplicative hash */
+            return (__uint128_t(hash.second() * (~pilot)) * partition_size) >> 64;
         }
     }
 
@@ -93,7 +98,8 @@ struct dense_partitioned_phf {
     }
 
     size_t num_bits_for_mapper() const {
-        return m_partitioner.num_bits() + m_bucketer.num_bits()  + m_offsets.num_bits() + (needsFreeArray ? m_free_slots.num_bits() : 0);
+        return m_partitioner.num_bits() + m_bucketer.num_bits() + m_offsets.num_bits() +
+               (needsFreeArray ? m_free_slots.num_bits() : 0);
     }
 
     size_t num_bits() const {
@@ -117,8 +123,7 @@ struct dense_partitioned_phf {
         visitor.visit(m_bucketer);
         visitor.visit(m_pilots);
         visitor.visit(m_offsets);
-        if(needsFreeArray)
-            visitor.visit(m_free_slots);
+        if constexpr (needsFreeArray) visitor.visit(m_free_slots);
     }
 
 private:
@@ -128,7 +133,7 @@ private:
     range_bucketer m_partitioner;
     Bucketer m_bucketer;
     Encoder m_pilots;
-    diff<compact> m_offsets;
+    diff<vector<int16_t>> m_offsets;
     ef_sequence<false> m_free_slots;
 };
 

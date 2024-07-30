@@ -12,7 +12,44 @@
 
 namespace pthash {
 
+template<typename type>
+struct vector {
+    typedef type in_type;
+
+    template <typename Iterator>
+    void encode(Iterator begin, const uint64_t n) {
+        m_values.reserve(n);
+        for (uint64_t i = 0; i != n; ++i, ++begin) m_values.push_back(type(*begin));
+    }
+
+    static std::string name() {
+        return "V";
+    }
+
+    size_t size() const {
+        return m_values.size();
+    }
+
+    size_t num_bits() const {
+        return size() * sizeof(type) * 8;
+    }
+
+    uint64_t access(uint64_t i) const {
+        return m_values[i];
+    }
+
+    template <typename Visitor>
+    void visit(Visitor& visitor) {
+        visitor.visit(m_values);
+    }
+
+private:
+    std::vector<type> m_values;
+};
+
 struct compact {
+    typedef uint64_t in_type;
+
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.build(begin, n);
@@ -44,6 +81,7 @@ private:
 };
 
 struct partitioned_compact {
+    typedef uint64_t in_type;
     static const uint64_t partition_size = 256;
     static_assert(partition_size > 0);
 
@@ -148,6 +186,7 @@ std::pair<std::vector<uint64_t>, std::vector<uint64_t>> compute_ranks_and_dictio
 }
 
 struct dictionary {
+    typedef uint64_t in_type;
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         auto [ranks, dict] = compute_ranks_and_dictionary(begin, n);
@@ -184,6 +223,7 @@ private:
 };
 
 struct elias_fano {
+    typedef uint64_t in_type;
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.encode(begin, n);
@@ -216,6 +256,7 @@ private:
 };
 
 struct sdc {
+    typedef uint64_t in_type;
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         auto [ranks, dict] = compute_ranks_and_dictionary(begin, n);
@@ -252,6 +293,7 @@ private:
 };
 
 struct rice {
+    typedef uint64_t in_type;
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         m_values.encode(begin, n);
@@ -284,6 +326,7 @@ private:
 
 template <typename Front, typename Back>
 struct dual {
+    typedef uint64_t in_type;
     template <typename Iterator>
     void encode(Iterator begin, const uint64_t n) {
         size_t front_size = n * skew_bucketer::b;

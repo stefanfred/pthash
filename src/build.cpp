@@ -22,7 +22,7 @@ struct build_parameters {
     std::string output_filename;
 };
 
-enum phf_type { single, partitioned, dense_partitioned };
+enum phf_type { single, partitioned, phobic_partitioned };
 
 template <typename Function, typename Builder, typename Iterator>
 void build_benchmark(Builder& builder, build_timings const& timings,
@@ -143,7 +143,7 @@ void choose_needs_free_array(Builder const& builder, build_timings const& timing
     }
 }
 
-constexpr uint64_t granularity = 15;
+constexpr uint64_t granularity = 0;
 template <typename Builder, typename BaseEncoder1, typename BaseEncoder2,
           pthash_search_type search_type, uint64_t tradeoff = granularity, typename Iterator>
 void choose_dual_encoder_tradeoff(build_parameters<Iterator> const& params,
@@ -226,7 +226,7 @@ void choose_encoder(build_parameters<Iterator> const& params, build_configuratio
                                 elias_fano, true, search_type>>(builder, timings, params, config);
         }
     }                                                     //
-    else if constexpr (t == phf_type::dense_partitioned)  //
+    else if constexpr (t == phf_type::phobic_partitioned)  //
     {
         if (encode_all or params.encoder_type == "mono-R") {
             choose_needs_free_array<Builder, Iterator, search_type, mono_R>(builder, timings,
@@ -288,6 +288,8 @@ void choose_search(build_parameters<Iterator> const& params, build_configuration
         choose_encoder<t, Builder, pthash_search_type::xor_displacement>(params, config);
     } else if (config.search == pthash_search_type::add_displacement) {
         choose_encoder<t, Builder, pthash_search_type::add_displacement>(params, config);
+    } else if (config.search == pthash_search_type::mult_hash) {
+        choose_encoder<t, Builder, pthash_search_type::mult_hash>(params, config);
     } else {
         assert(false);
     }
@@ -297,7 +299,7 @@ template <typename Hasher, typename Bucketer, typename Iterator>
 void choose_builder(build_parameters<Iterator> const& params, build_configuration const& config) {
     if (config.avg_partition_size != 0) {
         if (config.dense_partitioning) {
-            choose_search<phf_type::dense_partitioned,
+            choose_search<phf_type::phobic_partitioned,
                           internal_memory_builder_partitioned_phf<Hasher, Bucketer>>(params,
                                                                                      config);
         } else {
@@ -385,6 +387,8 @@ void build(cmd_line_parser::parser const& parser, Iterator keys, uint64_t num_ke
         config.search = pthash_search_type::xor_displacement;
     } else if (search_type == "add") {
         config.search = pthash_search_type::add_displacement;
+    }  else if (search_type == "mul") {
+        config.search = pthash_search_type::mult_hash;
     } else {
         std::cerr << "unknown search type" << std::endl;
         return;

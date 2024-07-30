@@ -54,10 +54,15 @@ struct single_phf {
         if constexpr (Search == pthash_search_type::xor_displacement) {
             const uint64_t hashed_pilot = default_hash64(pilot, m_seed);
             p = fastmod::fastmod_u64(hash.second() ^ hashed_pilot, m_M_128, m_table_size);
-        } else /* Search == pthash_search_type::add_displacement */ {
+        }
+        if constexpr (Search == pthash_search_type::add_displacement) {
             const uint64_t s = fastmod::fastdiv_u32(pilot, m_M_64);
             p = fastmod::fastmod_u32(((hash64(hash.second() + s).mix()) >> 33) + pilot, m_M_64,
                                      m_table_size);
+        }
+        if constexpr (Search == pthash_search_type::mult_hash) {
+            /* multiplicative hash */
+            return (__uint128(hash.second() * pilot) * m_table_size) >> 64;
         }
 
         if constexpr (Minimal) {
