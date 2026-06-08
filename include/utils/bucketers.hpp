@@ -53,11 +53,20 @@ private:
     std::vector<uint64_t> fulcrums;
 };
 
+template<bool perturbation=true>
 struct opt_bucketer {
     opt_bucketer() {}
 
+    inline double beta(const double normalized_hash) const {
+        return normalized_hash + (1 - normalized_hash) * std::log(1 - normalized_hash);
+    }
+
     inline double baseFunc(const double normalized_hash) const {
-        return (normalized_hash + (1 - normalized_hash) * std::log(1 - normalized_hash))  * (1.0 - c) + c * normalized_hash;;
+        if constexpr(perturbation) {
+            return beta(normalized_hash)  * (1.0 - c) + c * normalized_hash;;
+        } else {
+            return beta(normalized_hash);
+        }
     }
 
     void init(const uint64_t num_buckets, const double lambda, const uint64_t table_size,
@@ -112,6 +121,7 @@ private:
 struct skew_bucketer {
     static constexpr float a = 0.6;  // p1=n*a keys are placed in
     static constexpr float b = 0.3;  // p2=m*b buckets
+
 
     skew_bucketer() {}
 

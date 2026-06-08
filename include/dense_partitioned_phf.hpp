@@ -138,7 +138,7 @@ private:
 
 template <typename Hasher, typename Encoder>
 using phobic =
-    dense_partitioned_phf<Hasher, table_bucketer<opt_bucketer>, dense_interleaved<Encoder>, false,
+    dense_partitioned_phf<Hasher, table_bucketer<opt_bucketer<>>, dense_interleaved<Encoder>, false,
                           pthash_search_type::add_displacement>;
 
 }  // namespace pthash
