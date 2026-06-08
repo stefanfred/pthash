@@ -55,7 +55,13 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   add_executable(build src/build.cpp)
   target_link_libraries(build PRIVATE PTHASH CMD_LINE_PARSER)
   add_executable(example src/example.cpp)
+<<<<<<< Updated upstream
   target_link_libraries(example PRIVATE PTHASH CMD_LINE_PARSER)
+=======
+  target_link_libraries(example PRIVATE PTHASH)
+  add_executable(comp_to_opt src/comp_to_opt.cpp)
+  target_link_libraries(comp_to_opt PRIVATE PTHASH)
+>>>>>>> Stashed changes
 
   file(GLOB TEST_SOURCES test/test_*.cpp)
   foreach(TEST_SRC ${TEST_SOURCES})
